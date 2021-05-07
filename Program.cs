@@ -4,22 +4,30 @@ using System.Text.RegularExpressions;
 
 namespace interpolator
 {
-   class Program
+    class Program
     {
         static void Main(string[] args)
         {
             var template = "Item '{{product}}' priced {{price}} will be shipped on the {{shippingDate}}";
 
-            var interpolator=new TemplateInterpolator();
+            var convTmplt = template.Interpolate(o => o
+                .Replace("product", () => "Gaming Product")
+                .Replace("price", () => "$200")
+                .Replace("shippingDate", () => DateTime.Today.ToShortDateString()));
 
-            interpolator.Replace("product", () => "Gaming Product");
-            interpolator.Replace("price",()=>"$200");
-            interpolator.Replace("shippingDate",()=>DateTime.Today.ToShortDateString());
 
-            var result=interpolator.Interpolate(template);
+            Console.WriteLine(convTmplt);
 
-            Console.WriteLine(result);
+        }
+    }
 
+    public static class InterpolatorHelper
+    {
+        public static string Interpolate(this string template, Action<TemplateInterpolator> actions)
+        {
+            var itpl = new TemplateInterpolator();
+            actions?.Invoke(itpl);
+            return itpl.Interpolate(template);
         }
     }
 
@@ -28,7 +36,7 @@ namespace interpolator
         private string _regexString = @"{{(\w+)}}";
         private bool _ignoreCase = true;
 
-        private readonly Dictionary<string, Func<string>> _directives = 
+        private readonly Dictionary<string, Func<string>> _directives =
             new Dictionary<string, Func<string>>();
 
         public TemplateInterpolator Replace(string target, Func<string> action)
@@ -51,18 +59,18 @@ namespace interpolator
 
         public string Interpolate(string template)
         {
-            var regExInstance = new Regex(_regexString, RegexOptions.Compiled );
-            var directives=_ignoreCase?ConvertDirectivesToCaseInsesitive(_directives):_directives;
-            return regExInstance.Replace(template,match => GetNewValue(match,directives) );
+            var regExInstance = new Regex(_regexString, RegexOptions.Compiled);
+            var directives = _ignoreCase ? ConvertDirectivesToCaseInsesitive(_directives) : _directives;
+            return regExInstance.Replace(template, match => GetNewValue(match, directives));
         }
 
-        private Dictionary<string,Func<string>> ConvertDirectivesToCaseInsesitive( Dictionary<string,Func<string>> directives)
+        private Dictionary<string, Func<string>> ConvertDirectivesToCaseInsesitive(Dictionary<string, Func<string>> directives)
         {
             var comparer = StringComparer.OrdinalIgnoreCase;
             return new Dictionary<string, Func<string>>(directives, comparer);
         }
 
-        private string GetNewValue( Match match, Dictionary<string,Func<string>> directives)
+        private string GetNewValue(Match match, Dictionary<string, Func<string>> directives)
         {
             var fieldName = match.Groups[1].Value;
             var found = directives.TryGetValue(fieldName, out var action);
