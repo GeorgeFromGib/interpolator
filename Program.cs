@@ -8,7 +8,10 @@ namespace interpolator
     {
         static void Main(string[] args)
         {
-            var template = "Item '{{product}}' priced {{price}} will be shipped on the {{shippingDate}}";
+            //var template = "Item '{{product}}' priced {{price}} will be shipped on the {{shippingDate}}";
+            var template = "Item\t\tPrice\n" +
+                        "-------------------------\n" +
+                        "#--productList:{{product}}\t{{price}}--#\n";
 
             var convTmplt = template.Interpolate(o => o
                 .Replace("product", () => "Gaming Product")
@@ -31,6 +34,14 @@ namespace interpolator
         }
     }
 
+    public class LoopHelper {
+        public TemplateInterpolator For(string target, Func<string> action)
+        {
+            _directives.Add(target, action);
+            return this;
+        }
+    }
+
     public class TemplateInterpolator
     {
         private string _regexString = @"{{(\w+)}}";
@@ -39,15 +50,20 @@ namespace interpolator
         private readonly Dictionary<string, Func<string>> _directives =
             new Dictionary<string, Func<string>>();
 
-        public TemplateInterpolator Replace(string target, Func<string> action)
+        public TemplateInterpolator For(string target, Func<string> action)
         {
             _directives.Add(target, action);
             return this;
         }
 
-        public TemplateInterpolator SetFieldsRegex(string regexString)
+        public TemplateInterpolator ForLoop(string target, Action<LoopHelper> actions)
         {
-            _regexString = regexString;
+            _directives.Add(target, action);
+            return this;
+        }
+        public TemplateInterpolator SetDelimiters(string preDelimiter,string postDelimiter)
+        {
+            _regexString = $@"{preDelimiter}(\w+){postDelimiter}";
             return this;
         }
 
