@@ -42,37 +42,24 @@ namespace interpolator
         }
     }
 
-    public class TemplateInterpolator
+    public abstract class InterpolatorBase
     {
         private string _regexString = @"{{(\w+)}}";
         private bool _ignoreCase = true;
-
         private readonly Dictionary<string, Func<string>> _directives =
             new Dictionary<string, Func<string>>();
 
-        public TemplateInterpolator For(string target, Func<string> action)
-        {
-            _directives.Add(target, action);
-            return this;
-        }
-
-        public TemplateInterpolator ForLoop(string target, Action<LoopHelper> actions)
-        {
-            _directives.Add(target, action);
-            return this;
-        }
-        public TemplateInterpolator SetDelimiters(string preDelimiter,string postDelimiter)
+        public InterpolatorBase SetDelimiters(string preDelimiter,string postDelimiter)
         {
             _regexString = $@"{preDelimiter}(\w+){postDelimiter}";
             return this;
         }
 
-        public TemplateInterpolator IgnoreCase(bool ignoreCase)
+        public InterpolatorBase IgnoreCase(bool ignoreCase)
         {
             _ignoreCase = ignoreCase;
             return this;
         }
-
         public string Interpolate(string template)
         {
             var regExInstance = new Regex(_regexString, RegexOptions.Compiled);
@@ -97,5 +84,47 @@ namespace interpolator
             var originalValue = match.Groups[0].Value;
             return originalValue;
         }
+    }
+
+    public class TemplateInterpolator:InterpolatorBase
+    {
+       
+        public TemplateInterpolator For(string target, Func<string> action)
+        {
+            _directives.Add(target, action);
+            return this;
+        }
+
+        public TemplateInterpolator ForLoop(string target, Action<LoopHelper> actions)
+        {
+            _directives.Add(target, action);
+            return this;
+        }
+       
+
+        // public string Interpolate(string template)
+        // {
+        //     var regExInstance = new Regex(_regexString, RegexOptions.Compiled);
+        //     var directives = _ignoreCase ? ConvertDirectivesToCaseInsesitive(_directives) : _directives;
+        //     return regExInstance.Replace(template, match => GetNewValue(match, directives));
+        // }
+
+        // private Dictionary<string, Func<string>> ConvertDirectivesToCaseInsesitive(Dictionary<string, Func<string>> directives)
+        // {
+        //     var comparer = StringComparer.OrdinalIgnoreCase;
+        //     return new Dictionary<string, Func<string>>(directives, comparer);
+        // }
+
+        // private string GetNewValue(Match match, Dictionary<string, Func<string>> directives)
+        // {
+        //     var fieldName = match.Groups[1].Value;
+        //     var found = directives.TryGetValue(fieldName, out var action);
+        //     if (found)
+        //     {
+        //         return action();
+        //     }
+        //     var originalValue = match.Groups[0].Value;
+        //     return originalValue;
+        // }
     }
 }
