@@ -15,11 +15,11 @@ namespace interpolator
                         "#--productList:{{product}}\t{{price}}--#\n";
 
             var convTmplt = template.Interpolate(o => o
-                .ForTemplate("productList",(t)=>{
-                    return t.Interpolate(t=>t
-                    .For("product","Keyboard")
-                    .For("price","$300"));
-                    })
+                // .ForTemplate("productList",(t)=>{
+                //     return t.Interpolate(t=>t
+                //     .For("product","Keyboard")
+                //     .For("price","$300"));
+                //     })
                 .For("product", () => "Gaming Product")
                 .For("price", () => "$200")
                 .For("shippingDate", () => DateTime.Today.ToShortDateString()));
@@ -36,7 +36,7 @@ namespace interpolator
         {
             var itpl = new TemplateInterpolator();
             actions?.Invoke(itpl);
-            return itpl.Interpolate(template);
+            return itpl.Parse(template);
         }
     }
 
@@ -46,12 +46,23 @@ namespace interpolator
         public DirectivesDict(DirectivesDict dict, StringComparer comparer ):base(dict,comparer) {}  
     }
 
+    class TemplatesDict:Dictionary<string,string>
+    {}
+
+    public class SecondaryCommands {
+        public void UseTemplate(string templateName, Func<string,string> action) {
+            return 
+        }
+        
+    }
+
     public class TemplateInterpolator
     {
         private string _regexString = @"{{(\w+)}}";
         private bool _ignoreCase = true;
         private string _tplteRegex = @"\#--(\w+):(.*)--\#";
         private readonly DirectivesDict _directives = new DirectivesDict();
+        private readonly TemplatesDict _templatesDict=new TemplatesDict();
     
         public TemplateInterpolator For(string target, Func<string> action)
         {
@@ -59,15 +70,14 @@ namespace interpolator
             return this;
         }
 
-    
         public TemplateInterpolator For(string target, string value)
         {
             return For(target,()=>value);
         }
 
-        public TemplateInterpolator ForTemplate(string templateName, Func<string,string> action)
+        public TemplateInterpolator For(string target, Action<SecondaryCommands> actions)
         {
-            _directives.Add(templateName, action);
+            //return For(target,()=>value);
             return this;
         }
 
@@ -83,14 +93,24 @@ namespace interpolator
             return this;
         }
 
-       
-
-
-        public string Interpolate(string template)
+        public string Parse(string template)
         {
-            var parsedTemplate = InterpolateTemplates(template);
+            var parsedTemplate=template;
+            parsedTemplate= ScrubTemplates(parsedTemplate);
+            //parsedTemplate = InterpolateTemplates(parsedTemplate);
             parsedTemplate = InterpolateFieldNames(parsedTemplate);
             return parsedTemplate;
+        }
+
+        private string ScrubTemplates(string template)
+        {
+            var scrubedTemplate=Regex.Replace(template,_tplteRegex,matches=>{
+                var key=matches.Groups[1].Value;
+                var innerTplte=matches.Groups[2].Value;
+                _templatesDict.Add(key,innerTplte);
+                return "";
+            });
+            return scrubedTemplate;
         }
 
          private string InterpolateTemplates(string template)
