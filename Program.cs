@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-
+using SimpleInterpolator;
 
 namespace interpolator
 {
@@ -9,152 +7,42 @@ namespace interpolator
     {
         static void Main(string[] args)
         {
+            var shipDate=DateTime.Parse("2021/5/1");
             //var template = "Item '{{product}}' priced {{price}} will be shipped on the {{shippingDate}}";
             var template = "Item\t\tPrice\n" +
                         "-------------------------\n" +
-                        "#--productList:{{product}}\t{{price}}--#\n";
+                        "{{list}}"+
+                        "#--productList:{{product}}\t{{price}}--#\n" +
+                        "Shipping on the {{shippingDate}}\n" +
+                        "{{list2}}";
 
             var convTmplt = template.Interpolate(o => o
-                // .ForTemplate("productList",(t)=>{
-                //     return t.Interpolate(t=>t
-                //     .For("product","Keyboard")
-                //     .For("price","$300"));
-                //     })
-                .For("product", () => "Gaming Product")
-                .For("price", () => "$200")
-                .For("shippingDate", () => DateTime.Today.ToShortDateString()));
+                .For("list","productList",t=>
+                    t.Interpolate(f=>f
+                        .For("product","Keyboard")
+                        .For("price","$300"))
+                    )
+                    .For("list2","productList",t=>
+                    t.Interpolate(f=>f
+                        .For("product","Mouse")
+                        .For("price","$400"))
+                    )
+                // .For("product", () => "Gaming Product")
+                // .For("price", () => "$200")
+                .For("shippingDate", () => shipDate.ToShortDateString()));
 
 
             Console.WriteLine(convTmplt);
 
+
         }
     }
 
-    public static class InterpolatorHelper
-    {
-        public static string Interpolate(this string template, Action<TemplateInterpolator> actions)
-        {
-            var itpl = new TemplateInterpolator();
-            actions?.Invoke(itpl);
-            return itpl.Parse(template);
-        }
-    }
+   
 
-    class DirectivesDict:Dictionary<string,Func<string,string>>
-    {
-        public DirectivesDict() {}
-        public DirectivesDict(DirectivesDict dict, StringComparer comparer ):base(dict,comparer) {}  
-    }
-
-    class TemplatesDict:Dictionary<string,string>
-    {}
-
-    public class SecondaryCommands {
-        public void UseTemplate(string templateName, Func<string,string> action) {
-            return 
-        }
-        
-    }
-
-    public class TemplateInterpolator
-    {
-        private string _regexString = @"{{(\w+)}}";
-        private bool _ignoreCase = true;
-        private string _tplteRegex = @"\#--(\w+):(.*)--\#";
-        private readonly DirectivesDict _directives = new DirectivesDict();
-        private readonly TemplatesDict _templatesDict=new TemplatesDict();
     
-        public TemplateInterpolator For(string target, Func<string> action)
-        {
-            _directives.Add(target, (_)=>action.Invoke());
-            return this;
-        }
+    
 
-        public TemplateInterpolator For(string target, string value)
-        {
-            return For(target,()=>value);
-        }
 
-        public TemplateInterpolator For(string target, Action<SecondaryCommands> actions)
-        {
-            //return For(target,()=>value);
-            return this;
-        }
-
-        public TemplateInterpolator SetDelimiters(string preDelimiter, string postDelimiter)
-        {
-            _regexString = $@"{preDelimiter}(\w+){postDelimiter}";
-            return this;
-        }
-
-        public TemplateInterpolator IgnoreCase(bool ignoreCase)
-        {
-            _ignoreCase = ignoreCase;
-            return this;
-        }
-
-        public string Parse(string template)
-        {
-            var parsedTemplate=template;
-            parsedTemplate= ScrubTemplates(parsedTemplate);
-            //parsedTemplate = InterpolateTemplates(parsedTemplate);
-            parsedTemplate = InterpolateFieldNames(parsedTemplate);
-            return parsedTemplate;
-        }
-
-        private string ScrubTemplates(string template)
-        {
-            var scrubedTemplate=Regex.Replace(template,_tplteRegex,matches=>{
-                var key=matches.Groups[1].Value;
-                var innerTplte=matches.Groups[2].Value;
-                _templatesDict.Add(key,innerTplte);
-                return "";
-            });
-            return scrubedTemplate;
-        }
-
-         private string InterpolateTemplates(string template)
-        {
-            var regExInstance = new Regex(_tplteRegex, RegexOptions.Compiled);
-            var result = regExInstance.Replace(template, m =>
-            {
-                var loopName = m.Groups[1].Value;
-                var template=m.Groups[2].Value;
-                // var found = _loopDirectives.TryGetValue(loopName, out var actions);
-                // if (found)
-                // {
-                //     return "";
-                // }
-                return "";
-            });
-
-            return result;
-        }
-
-        private string InterpolateFieldNames(string template)
-        {
-            var regExInstance = new Regex(_regexString, RegexOptions.Compiled);
-            var directives = _ignoreCase ? ConvertDirectivesToCaseInsesitive(_directives) : _directives;
-            return regExInstance.Replace(template, match => GetNewValue(match, directives, template));
-        }
-
-        private DirectivesDict ConvertDirectivesToCaseInsesitive(DirectivesDict directives)
-        {
-            var comparer = StringComparer.OrdinalIgnoreCase;
-            return new DirectivesDict(directives, comparer);
-        }
-
-        private string GetNewValue(Match match, DirectivesDict directives, string template)
-        {
-            var fieldName = match.Groups[1].Value;
-            var found = directives.TryGetValue(fieldName, out var action);
-            if (found)
-            {
-                return action(template);
-            }
-            var originalValue = match.Groups[0].Value;
-            return originalValue;
-        }
-
-    }
+    
 }
