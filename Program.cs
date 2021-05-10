@@ -17,7 +17,7 @@ namespace interpolator
                         "{{list2}}";
 
             var convTmplt = template.Interpolate(o => o
-                .For("list","productList",t=>
+                .For("list1","productList",t=>
                     t.Interpolate(f=>f
                         .For("product","Keyboard")
                         .For("price","$300"))
@@ -37,12 +37,5 @@ namespace interpolator
 
         }
     }
-
-   
-
-    
-    
-
-
     
 }
