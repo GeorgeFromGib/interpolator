@@ -11,9 +11,9 @@ namespace interpolator
             var template = "Item '{{product}}' priced {{price}} will be shipped on the {{shippingDate}}";
 
             var convTmplt = template.Interpolate(o => o
-                .Replace("product", () => "Gaming Product")
-                .Replace("price", () => "$200")
-                .Replace("shippingDate", () => DateTime.Today.ToShortDateString()));
+                .For("product", () => "Keyboard")
+                .For("price", () => "$200")
+                .For("shippingDate", () => DateTime.Today.ToShortDateString()));
 
 
             Console.WriteLine(convTmplt);
@@ -27,7 +27,7 @@ namespace interpolator
         {
             var itpl = new TemplateInterpolator();
             actions?.Invoke(itpl);
-            return itpl.Interpolate(template);
+            return itpl.Parse(template);
         }
     }
 
@@ -39,15 +39,15 @@ namespace interpolator
         private readonly Dictionary<string, Func<string>> _directives =
             new Dictionary<string, Func<string>>();
 
-        public TemplateInterpolator Replace(string target, Func<string> action)
+        public TemplateInterpolator For(string target, Func<string> action)
         {
             _directives.Add(target, action);
             return this;
         }
 
-        public TemplateInterpolator SetFieldsRegex(string regexString)
+        public TemplateInterpolator SetDelimiters(string preDelimiter, string postDelimiter)
         {
-            _regexString = regexString;
+            _regexString = $@"{preDelimiter}(\w+){postDelimiter}";
             return this;
         }
 
@@ -57,11 +57,10 @@ namespace interpolator
             return this;
         }
 
-        public string Interpolate(string template)
+        public string Parse(string template)
         {
-            var regExInstance = new Regex(_regexString, RegexOptions.Compiled);
             var directives = _ignoreCase ? ConvertDirectivesToCaseInsesitive(_directives) : _directives;
-            return regExInstance.Replace(template, match => GetNewValue(match, directives));
+            return Regex.Replace(template, _regexString,match => GetNewValue(match, directives));
         }
 
         private Dictionary<string, Func<string>> ConvertDirectivesToCaseInsesitive(Dictionary<string, Func<string>> directives)
