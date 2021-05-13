@@ -4,4 +4,6 @@ namespace SimpleInterpolator.Actions
     {
         string Invoke();
     }
+
 }
+

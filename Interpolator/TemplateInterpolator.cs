@@ -1,6 +1,5 @@
 using System;
 using System.Text.RegularExpressions;
-using SimpleInterpolator;
 using SimpleInterpolator.Actions;
 
 namespace SimpleInterpolator
