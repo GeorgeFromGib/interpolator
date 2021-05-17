@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace SimpleInterpolator.Actions
 {
@@ -8,9 +9,9 @@ namespace SimpleInterpolator.Actions
         private Func<string, T, string> _action;
         private TemplatesDict _templateDict;
         private string _templateName;
-        private IEnumerable _records;
+        private ICollection<T> _records;
 
-        public ForLoopAction(TemplatesDict templateDict, string templateName, IEnumerable records, Func<string, T, string> action)
+        public ForLoopAction(TemplatesDict templateDict, string templateName, ICollection<T> records, Func<string, T, string> action)
         {
             _action = action;
             _templateDict = templateDict;

@@ -1,10 +1,12 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using SimpleInterpolator.Actions;
 
 namespace SimpleInterpolator
 {
-    public class TemplateInterpolator
+    public class Interpolator
     {
         private string _regexString = @"{{(\w+)}}";
         private bool _ignoreCase = true;
@@ -12,30 +14,36 @@ namespace SimpleInterpolator
         private readonly DirectivesDict _directives = new DirectivesDict();
         private readonly TemplatesDict _templatesDict = new TemplatesDict();
 
-        public TemplateInterpolator For(string target, Func<string> action)
+        public Interpolator For(string target, Func<string> action)
         {
             _directives.Add(target, new FunctionAction(action));
             return this;
         }
 
-        public TemplateInterpolator For(string target, string value)
+        public Interpolator For(string target, string value)
         {
             return For(target, () => value);
         }
 
-        public TemplateInterpolator For(string target, string templateName, Func<string, string> action)
+        public Interpolator For(string target, string templateName, Func<string, string> action)
         {
             _directives.Add(target, new TemplateAction(_templatesDict, templateName, action));
             return this;
         }
 
-        public TemplateInterpolator SetDelimiters(string preDelimiter, string postDelimiter)
+         public Interpolator For<T>(string target, string templateName,ICollection<T> records, Func<string, T,string> action)
+        {
+            _directives.Add(target, new ForLoopAction<T>(_templatesDict, templateName, records, action));
+            return this;
+        }
+
+        public Interpolator SetDelimiters(string preDelimiter, string postDelimiter)
         {
             _regexString = $@"{preDelimiter}(\w+){postDelimiter}";
             return this;
         }
 
-        public TemplateInterpolator IgnoreCase(bool ignoreCase)
+        public Interpolator IgnoreCase(bool ignoreCase)
         {
             _ignoreCase = ignoreCase;
             return this;
@@ -43,28 +51,29 @@ namespace SimpleInterpolator
 
         public string Parse(string template)
         {
+            var directives=_ignoreCase ? ConvertDirectivesToCaseInsesitive(_directives) : _directives;
             var parsedTemplate = template;
-            parsedTemplate = ScrubTemplates(parsedTemplate);
-            parsedTemplate = Interpolate(parsedTemplate);
+            parsedTemplate = ScrubTemplates(parsedTemplate,_templatesDict, _tplteRegex);
+            parsedTemplate = Interpolate(parsedTemplate,directives, _regexString);
             return parsedTemplate;
         }
 
-        private string ScrubTemplates(string template)
+        private string ScrubTemplates(string template, TemplatesDict templatesDict, string regex)
         {
-            var scrubedTemplate = Regex.Replace(template, _tplteRegex, matches =>
+            var scrubedTemplate = Regex.Replace(template, regex, matches =>
             {
                 var key = matches.Groups[1].Value;
                 var innerTplte = matches.Groups[2].Value;
-                _templatesDict.Add(key, innerTplte);
+                templatesDict.Add(key, innerTplte);
                 return "";
-            });
+            },RegexOptions.Singleline);
+            
             return scrubedTemplate;
         }
 
-        private string Interpolate(string template)
+        private string Interpolate(string template,DirectivesDict directives, string regex)
         {
-            var directives = _ignoreCase ? ConvertDirectivesToCaseInsesitive(_directives) : _directives;
-            return Regex.Replace(template, _regexString, match => GetNewValue(match, directives));
+            return Regex.Replace(template, regex, match => GetNewValue(match, directives));
         }
 
         private DirectivesDict ConvertDirectivesToCaseInsesitive(DirectivesDict directives)

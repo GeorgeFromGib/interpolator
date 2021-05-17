@@ -4,9 +4,9 @@ namespace SimpleInterpolator
 {
     public static class InterpolatorHelper
     {
-        public static string Interpolate(this string template, Action<TemplateInterpolator> actions)
+        public static string Interpolate(this string template, Action<Interpolator> actions)
         {
-            var itpl = new TemplateInterpolator();
+            var itpl = new Interpolator();
             actions?.Invoke(itpl);
             return itpl.Parse(template);
         }
